@@ -11,8 +11,9 @@ RSS_URL = (
     "?shelf=read"
 )
 
-# Output path — adjust to your DBFS or Unity Catalog volume as needed
-OUTPUT_PATH = "/tmp/goodreads_read_shelf.csv"
+SCHEMA   = "goodreads"
+TABLE    = "read_shelf"
+UC_TABLE = f"{SCHEMA}.{TABLE}"
 
 # COMMAND ----------
 
@@ -81,15 +82,13 @@ df.select("title", "author", "year_published", "num_pages", "user_rating", "aver
 
 # COMMAND ----------
 
-# DBTITLE 1,Save to CSV (single file)
+# DBTITLE 1,Write to Hive Metastore Delta table
 (
-    df.coalesce(1)
-    .write.mode("overwrite")
-    .option("header", "true")
-    .option("quote", '"')
-    .option("escape", '"')
-    .csv(OUTPUT_PATH)
+    df.write
+    .mode("overwrite")
+    .option("overwriteSchema", "true")
+    .saveAsTable(UC_TABLE)
 )
 
-print(f"CSV written to {OUTPUT_PATH}")
+print(f"Written to {UC_TABLE}")
 
