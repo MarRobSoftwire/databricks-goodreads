@@ -35,20 +35,26 @@ print(f"Latest ingestion: {latest_ts}  —  {bronze_latest.count()} books")
 # COMMAND ----------
 
 # DBTITLE 1,Cast types and clean text fields
-from pyspark.sql.functions import to_date
+from dateutil import parser as dateutil_parser
+from pyspark.sql.functions import udf
+from pyspark.sql.types import DateType
+
+@udf(DateType())
+def parse_date(raw):
+    if not raw:
+        return None
+    return dateutil_parser.parse(raw).date()
 
 silver = (
     bronze_latest
-    .withColumn("num_pages",        col("num_pages").cast("int"))
-    .withColumn("year_published",   col("year_published").cast("int"))
-    .withColumn("average_rating",   col("average_rating").cast("double"))
-    .withColumn("user_rating",      col("user_rating").cast("int"))
-    # Goodreads RSS dates are in RFC-2822 format, e.g. "Thu, 03 Apr 2025 00:00:00 -0700"
-    .withColumn("read_at",          to_date(col("read_at"),   "EEE, dd MMM yyyy HH:mm:ss Z"))
-    .withColumn("date_added",       to_date(col("date_added"), "EEE, dd MMM yyyy HH:mm:ss Z"))
-    .withColumn("is_read",          col("read_at").isNotNull())
-    .drop("book_description")
-    .drop("review")
+    .withColumn("num_pages",      col("num_pages").try_cast("int"))
+    .withColumn("year_published", col("year_published").try_cast("int"))
+    .withColumn("average_rating", col("average_rating").try_cast("double"))
+    .withColumn("user_rating",    col("user_rating").try_cast("int"))
+    .withColumn("read_at",        parse_date(col("read_at")))
+    .withColumn("date_added",     parse_date(col("date_added")))
+    .withColumn("is_read",        col("read_at").isNotNull())
+    .drop("book_description", "review")
 )
 
 silver.select("title", "author", "year_published", "num_pages", "user_rating", "average_rating", "read_at", "is_read").show(truncate=False)
