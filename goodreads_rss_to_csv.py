@@ -77,7 +77,7 @@ spark = SparkSession.builder.getOrCreate()
 schema = StructType([StructField(col, StringType(), True) for col in books[0].keys()])
 df = spark.createDataFrame(books, schema=schema)
 
-display(df.select("title", "author", "year_published", "num_pages", "user_rating", "average_rating", "read_at"))
+df.select("title", "author", "year_published", "num_pages", "user_rating", "average_rating", "read_at").show(truncate=False)
 
 # COMMAND ----------
 
@@ -92,3 +92,4 @@ display(df.select("title", "author", "year_published", "num_pages", "user_rating
 )
 
 print(f"CSV written to {OUTPUT_PATH}")
+
