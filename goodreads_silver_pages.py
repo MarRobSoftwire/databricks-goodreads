@@ -9,6 +9,10 @@
 
 # COMMAND ----------
 
+# MAGIC %pip install beautifulsoup4 python-dateutil
+
+# COMMAND ----------
+
 # DBTITLE 1,Configuration
 BRONZE_PAGES_TABLE = "goodreads.bronze_review_pages"
 SILVER_TABLE       = "goodreads.silver_books"
@@ -38,7 +42,7 @@ def extract_start_date_str(raw_html):
     matches = [
         row.get_text(separator=" ", strip=True)
         for row in soup.find_all("div", class_="readingTimeline__text")
-        if "Started Reading" in row.get_text()
+        if "Started Reading" in row.get_text() and "–" in row.get_text()
     ]
     if not matches:
         return None
