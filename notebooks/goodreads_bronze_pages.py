@@ -39,8 +39,15 @@ REQUEST_DELAY_S    = 2  # polite delay between HTTP requests
 # COMMAND ----------
 
 # DBTITLE 1,Load session cookie from Databricks secret
-session_cookie = dbutils.secrets.get(scope="goodreads", key="session_id")
-print("Session cookie loaded.")
+dbutils.widgets.text("session_cookie", "", "Session Cookie (optional — overrides secret)")
+widget_cookie = dbutils.widgets.get("session_cookie").strip()
+
+if widget_cookie:
+    session_cookie = widget_cookie
+    print("Session cookie loaded from widget parameter.")
+else:
+    session_cookie = dbutils.secrets.get(scope="goodreads", key="session_id")
+    print("Session cookie loaded from Databricks secret.")
 
 # COMMAND ----------
 
