@@ -25,7 +25,7 @@ databricks bundle deploy
 The app source code then needs to be deployed separately
 ```bash
 databricks apps deploy goodreads-app \
-  --source-code-path /Workspace/Users/$(databricks current-user me --output json | jq -r '.userName')/.bundle/goodreads_bundle/dev/files/app \
+  --source-code-path /Workspace/Shared/.bundle/goodreads_bundle/dev/files/app \
   --mode SNAPSHOT
 ```
 

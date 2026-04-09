@@ -24,7 +24,6 @@ jobs:
         run: databricks bundle deploy
       - name: Deploy app
         run: |
-          CURRENT_USER=$(databricks current-user me --output json | jq -r '.userName')
           databricks apps deploy goodreads-app \
-            --source-code-path "/Workspace/Users/${CURRENT_USER}/.bundle/goodreads_bundle/dev/files/app" \
+            --source-code-path "/Workspace/Shared/.bundle/goodreads_bundle/dev/files/app" \
             --mode SNAPSHOT
