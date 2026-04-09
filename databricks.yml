@@ -15,7 +15,6 @@ resources:
 
 targets:
   dev:
-    mode: development
     default: true
     workspace:
       host: https://dbc-8ae6cd44-6b5a.cloud.databricks.com
