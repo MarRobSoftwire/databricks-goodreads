@@ -5,34 +5,20 @@ resources:
   jobs:
     pages_job:
       name: goodreads-pages-job
-      job_clusters:
-        - job_cluster_key: main
-          new_cluster:
-            spark_version: 15.4.x-scala2.12
-            node_type_id: m5.large
-            num_workers: 0
-            spark_conf:
-              spark.master: "local[*, 4]"
-              spark.databricks.cluster.profile: singleNode
-            custom_tags:
-              ResourceClass: SingleNode
       tasks:
         - task_key: bronze_review_pages
-          job_cluster_key: main
           notebook_task:
-            notebook_path: ./notebooks/goodreads_bronze_pages
+            notebook_path: ./notebooks/goodreads_bronze_pages.py
         - task_key: silver_review_pages
           depends_on:
             - task_key: bronze_review_pages
-          job_cluster_key: main
           notebook_task:
-            notebook_path: ./notebooks/goodreads_silver_pages
+            notebook_path: ./notebooks/goodreads_silver_pages.py
         - task_key: gold_pages_per_day
           depends_on:
             - task_key: silver_review_pages
-          job_cluster_key: main
           notebook_task:
-            notebook_path: ./notebooks/goodreads_gold_pages_per_day
+            notebook_path: ./notebooks/goodreads_gold_pages_per_day.py
 
   apps:
     goodreads_app:
