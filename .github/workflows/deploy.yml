@@ -1,0 +1,30 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy bundle
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_BUNDLE_ENV: prod
+    steps:
+      - uses: actions/checkout@v6
+      - uses: databricks/setup-cli@main
+      - name: Deploy bundle
+        run: databricks bundle deploy
+      - name: Deploy app
+        run: |
+          CURRENT_USER=$(databricks current-user me --output json | jq -r '.userName')
+          databricks apps deploy goodreads-app \
+            --source-code-path "/Workspace/Users/${CURRENT_USER}/.bundle/goodreads_bundle/prod/files/app" \
+            --mode SNAPSHOT
