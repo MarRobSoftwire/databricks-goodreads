@@ -92,15 +92,11 @@ app.layout = html.Div(
             ],
         ),
 
-        html.Div(id="loading-status", style={"fontSize": "13px", "marginBottom": "8px", "color": "#c0392b"}),
+        html.Div(id="loading-message", style={"fontSize": "13px", "marginBottom": "8px", "color": "#888"}),
+        html.Div(id="error-message", style={"fontSize": "13px", "marginBottom": "8px", "color": "#c0392b"}),
 
-        dcc.Loading(
-            type="circle",
-            children=[
-                dcc.Graph(id="pages-chart", style={"height": "480px"}),
-                dcc.Graph(id="books-chart", style={"height": "300px"}),
-            ],
-        ),
+        dcc.Graph(id="pages-chart", style={"height": "480px"}),
+        dcc.Graph(id="books-chart", style={"height": "300px"}),
 
         # Hidden store holds the full dataset after initial load
         dcc.Store(id="store-data"),
@@ -118,11 +114,11 @@ app.layout = html.Div(
     Output("date-range", "max_date_allowed"),
     Output("date-range", "start_date"),
     Output("date-range", "end_date"),
-    Output("loading-status", "children"),
+    Output("error-message", "children"),
     Input("refresh-interval", "n_intervals"),
     background=True,
     running=[
-        (Output("loading-status", "children"), "Starting warehouse and loading data…", ""),
+        (Output("loading-message", "children"), "⏳ Starting warehouse and loading data…", ""),
     ],
 )
 def refresh_data(_n):
