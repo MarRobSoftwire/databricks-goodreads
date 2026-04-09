@@ -1,5 +1,3 @@
 env:
-  - name: DATABRICKS_HTTP_PATH
-    valueFrom:
-      secretRef:
-        key: databricks-http-path
+  - name: DATABRICKS_WAREHOUSE_ID
+    valueFrom: sql_warehouse
