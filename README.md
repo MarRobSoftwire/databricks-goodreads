@@ -22,10 +22,11 @@ databricks bundle validate
 databricks bundle deploy
 ```
 
-On first deployment, the app may need to be started with
-
+The app source code then needs to be deployed separately
 ```bash
-databricks apps start goodreads-app
+databricks apps deploy goodreads-app \
+  --source-code-path /Workspace/Users/$(databricks current-user me --output json | jq -r '.userName')/.bundle/goodreads_bundle/dev/files/app \
+  --mode SNAPSHOT
 ```
 
 The Unity catalog permissions need to be configured separately :(
