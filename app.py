@@ -4,41 +4,51 @@ Databricks App that visualises the gold_pages_per_day table using Dash + Plotly.
 """
 
 import os
-from urllib.parse import urlparse
 import diskcache
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import pandas as pd
-from databricks import sql
+import time
 from databricks.sdk import WorkspaceClient
+from databricks.sdk.service.sql import StatementState
 
 _sdk = WorkspaceClient()  # auto-configured by the Databricks App runtime
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-GOLD_TABLE = "goodreads.gold_pages_per_day"
+GOLD_TABLE = os.environ.get("TABLE_NAME", "goodreads.gold_pages_per_day")
 
 # ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------
 def load_data() -> pd.DataFrame:
-    with sql.connect(
-        server_hostname=urlparse(_sdk.config.host).hostname,
-        http_path=f"/sql/1.0/warehouses/{os.environ['DATABRICKS_WAREHOUSE_ID']}",
-        access_token=_sdk.config.token,
-        _socket_timeout=120,
-    ) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                f"SELECT date, est_pages_read, books_in_progress "
-                f"FROM {GOLD_TABLE} ORDER BY date"
-            )
-            rows = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
+    warehouse_id = os.environ["DATABRICKS_WAREHOUSE_ID"]
 
+    response = _sdk.statement_execution.execute_statement(
+        warehouse_id=warehouse_id,
+        statement=f"SELECT date, est_pages_read, books_in_progress FROM {GOLD_TABLE} ORDER BY date",
+        wait_timeout="0s",  # return immediately so we can poll with our own timeout
+    )
+    statement_id = response.statement_id
+
+    deadline = time.time() + 300  # 5 min — enough for a cold warehouse start
+    while time.time() < deadline:
+        status = _sdk.statement_execution.get_statement(statement_id)
+        state = status.status.state
+        if state == StatementState.SUCCEEDED:
+            break
+        if state in (StatementState.FAILED, StatementState.CANCELED, StatementState.CLOSED):
+            raise RuntimeError(f"Query failed: {status.status.error}")
+        time.sleep(3)
+    else:
+        _sdk.statement_execution.cancel_execution(statement_id)
+        raise TimeoutError("Query timed out after 5 minutes")
+
+    columns = [c.name for c in status.manifest.schema.columns]
+    rows = status.result.data_array or []
     df = pd.DataFrame(rows, columns=columns)
     df["date"] = pd.to_datetime(df["date"])
     df["est_pages_read"] = df["est_pages_read"].astype(float)
