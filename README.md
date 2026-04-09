@@ -15,7 +15,6 @@ The bundle needs to recognise the existing state with (once only)
 ```bash
 databricks bundle deployment bind goodreads_app goodreads
 ```
-We can probably store this state somewhere to improve things
 
 The resource can then be deployed with
 ```bash
@@ -47,6 +46,13 @@ databricks grants update table goodreads.gold_pages_per_day \
 
 The env var will need to be provided from app.yml so the UI is probably simplest
 
+
+#### GitHub Actions
+
+Two workflows are defined in `.github/workflows/`:
+
+- **`deploy.yml`** — runs `databricks bundle deploy` on every push to `main`. Requires `DATABRICKS_HOST` and `DATABRICKS_TOKEN` secrets set in the repo.
+- **`setup.yml`** — manually triggered (`workflow_dispatch`). Runs the one-time `databricks bundle deployment bind` to link the bundle to an existing app. Takes the app name as an input (default: `goodreads-app`).
 
 #### Documentation:
 
