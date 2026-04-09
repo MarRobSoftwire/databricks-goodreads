@@ -16,7 +16,7 @@ jobs:
       DATABRICKS_AUTH_TYPE: github-oidc
       DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
       DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
-      DATABRICKS_BUNDLE_ENV: prod
+      DATABRICKS_BUNDLE_ENV: dev
     steps:
       - uses: actions/checkout@v6
       - uses: databricks/setup-cli@main
@@ -26,5 +26,5 @@ jobs:
         run: |
           CURRENT_USER=$(databricks current-user me --output json | jq -r '.userName')
           databricks apps deploy goodreads-app \
-            --source-code-path "/Workspace/Users/${CURRENT_USER}/.bundle/goodreads_bundle/prod/files/app" \
+            --source-code-path "/Workspace/Users/${CURRENT_USER}/.bundle/goodreads_bundle/dev/files/app" \
             --mode SNAPSHOT
