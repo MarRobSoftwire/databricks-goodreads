@@ -29,7 +29,7 @@ def load_data() -> pd.DataFrame:
 
     response = _sdk.statement_execution.execute_statement(
         warehouse_id=warehouse_id,
-        statement=f"SELECT date, est_pages_read, books_in_progress FROM {GOLD_TABLE} ORDER BY date",
+        statement=f"SELECT date, est_pages_read, size(books_in_progress) AS books_in_progress FROM {GOLD_TABLE} ORDER BY date",
         wait_timeout="0s",  # return immediately so we can poll with our own timeout
     )
     statement_id = response.statement_id
