@@ -19,6 +19,7 @@ targets:
     default: true
     workspace:
       host: https://dbc-8ae6cd44-6b5a.cloud.databricks.com
+      root_path: /Workspace/Users/mark.roberts@softwire.com/.bundle/${bundle.name}/${bundle.target}
   # prod target is not currently in use - kept as an example of a multi-target setup
   # root_path and permissions would need updating before use
   prod:
