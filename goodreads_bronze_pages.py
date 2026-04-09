@@ -20,8 +20,8 @@
 # MAGIC
 # MAGIC **Step 2 — Store as a Databricks secret (run once in a terminal with the Databricks CLI)**
 # MAGIC ```
-# MAGIC databricks secrets create-scope --scope goodreads
-# MAGIC databricks secrets put-secret --scope goodreads --key session_id --string-value "<paste value here>"
+# MAGIC databricks secrets create-scope goodreads
+# MAGIC databricks secrets put-secret goodreads session_id --string-value "<paste value here>"
 # MAGIC ```
 # MAGIC
 # MAGIC **Re-running after cookie expiry**
@@ -60,13 +60,12 @@ display(urls_df)
 import urllib.request
 import time
 
-LOGIN_SIGNALS = ["Sign in to Goodreads", "sign_in", "choose_sign_in"]
-
-def assert_authenticated(html: str, url: str):
-    if any(signal in html for signal in LOGIN_SIGNALS):
+def assert_authenticated(html: str, book_id: str):
+    if book_id not in html:
+        print(f"[{book_id}] Auth failed — HTML preview: {html[:500].strip()!r}")
         raise RuntimeError(
-            f"Goodreads returned a login page for {url}. "
-            "Session cookie has expired — update the Databricks secret and re-run."
+            f"Book ID '{book_id}' not found in response. "
+            "Cookie may have expired — update the Databricks secret and re-run."
         )
 
 rows = []
@@ -78,14 +77,14 @@ for row in urls_df.collect():
     with urllib.request.urlopen(req) as resp:
         html = resp.read().decode("utf-8")
 
-    assert_authenticated(html, row.goodreads_url)
+    assert_authenticated(html, row.book_id)
 
     rows.append({
         "book_id":       row.book_id,
         "goodreads_url": row.goodreads_url,
         "raw_html":      html,
     })
-    print(f"Fetched {row.book_id}: {len(html):,} chars")
+    print(f"Fetched book ID: {row.book_id}. Found {len(html):,} characters")
     time.sleep(REQUEST_DELAY_S)
 
 print(f"\nSuccessfully fetched {len(rows)} pages.")
