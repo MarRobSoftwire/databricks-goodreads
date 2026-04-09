@@ -26,3 +26,20 @@ jobs:
           databricks apps deploy goodreads-app \
             --source-code-path "/Workspace/Shared/.bundle/goodreads_bundle/dev/files/app" \
             --mode SNAPSHOT
+      # bundle deploy resets app resources to only what is declared in databricks.yml.
+      # UC table resources (securable_type: TABLE) are not supported in the bundle
+      # YAML schema — only VOLUME is supported via uc_securable
+      # (https://docs.databricks.com/aws/en/dev-tools/bundles/resources#appresourcesuc_securable).
+      # This step re-applies the UC table resource after every deploy via the REST API.
+      # (https://docs.databricks.com/api/workspace/apps/update)
+      - name: Patch app UC table resource
+        run: |
+          cat > /tmp/app-resources.json << EOF
+          {
+            "resources": [
+              {"name": "sql_warehouse", "sql_warehouse": {"id": "b5e8bae3847f4c31", "permission": "CAN_USE"}},
+              {"name": "uc_table", "uc_securable": {"securable_full_name": "workspace.goodreads.gold_pages_per_day", "securable_type": "TABLE", "permission": "SELECT"}}
+            ]
+          }
+          EOF
+          databricks api patch /api/2.0/apps/goodreads-app --json @/tmp/app-resources.json
