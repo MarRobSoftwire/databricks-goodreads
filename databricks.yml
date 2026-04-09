@@ -1,0 +1,30 @@
+bundle:
+  name: goodreads_bundle
+
+resources:
+  apps:
+    goodreads_app:
+      name: 'goodreads-app'
+      source_code_path: app
+      description: 'A goodreads dashboard'
+      resources:
+        - name: sql_warehouse
+          sql_warehouse:
+            id: b5e8bae3847f4c31
+            permission: CAN_USE
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://dbc-8ae6cd44-6b5a.cloud.databricks.com
+  prod:
+    mode: production
+    workspace:
+      host: https://dbc-8ae6cd44-6b5a.cloud.databricks.com
+      root_path: /Workspace/Users/someone@example.com/.bundle/${bundle.name}/${bundle.target}
+    permissions:
+      - user_name: someone@example.com
+        level: CAN_MANAGE
+

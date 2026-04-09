@@ -1,3 +1,5 @@
+command: ["python", "app.py"]
+
 env:
   - name: DATABRICKS_WAREHOUSE_ID
     valueFrom: sql_warehouse
