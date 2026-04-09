@@ -6,7 +6,9 @@
 # MAGIC
 # MAGIC **Model:** for each fully-read book, `pages_per_day = num_pages / reading_days`
 # MAGIC is distributed uniformly across every day in `[started_reading, read_at]`.
-# MAGIC Daily contributions from concurrently-read books are summed.
+# MAGIC The first and last day of each book are weighted at 0.5 to smooth boundary spikes
+# MAGIC where one book ends and another begins on the same day.
+# MAGIC Daily weighted contributions from concurrently-read books are summed.
 # MAGIC
 # MAGIC Books without a recorded start date are skipped and logged.
 
@@ -55,24 +57,33 @@ print(f"\nModelling {filtered.count()} books")
 # COMMAND ----------
 
 # DBTITLE 1,Compute pages_per_day per book
-from pyspark.sql.functions import datediff
+from pyspark.sql.functions import datediff, greatest, lit
 
 modelled = (
     filtered
-    .withColumn("reading_days", datediff(col("read_at"), col("started_reading")) + 1)
-    .withColumn("pages_per_day", col("num_pages") / col("reading_days"))
+    .withColumn("reading_days", greatest(datediff(col("read_at"), col("started_reading")), lit(1)))
+    .withColumn("base_pages_per_day", col("num_pages") / col("reading_days"))
 )
 
-display(modelled.select("title", "started_reading", "read_at", "num_pages", "reading_days", "pages_per_day"))
+display(modelled.select("title", "started_reading", "read_at", "num_pages", "reading_days", "base_pages_per_day"))
 
 # COMMAND ----------
 
 # DBTITLE 1,Explode into one row per calendar day per book
-from pyspark.sql.functions import sequence, explode
+from pyspark.sql.functions import sequence, explode, when, lit
 
 daily = (
     modelled
     .withColumn("date", explode(sequence(col("started_reading"), col("read_at"))))
+    .withColumn(
+        "weight",
+        when(
+            col("started_reading") == col("read_at"), lit(1.0)
+        ).when(
+            (col("date") == col("started_reading")) | (col("date") == col("read_at")), lit(0.5)
+        ).otherwise(lit(1.0))
+    )
+    .withColumn("pages_per_day", col("base_pages_per_day") * col("weight"))
     .select("date", "title", "pages_per_day")
 )
 
