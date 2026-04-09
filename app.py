@@ -11,6 +11,9 @@ from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import pandas as pd
 from databricks import sql
+from databricks.sdk import WorkspaceClient
+
+_sdk = WorkspaceClient()  # auto-configured by the Databricks App runtime
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -21,7 +24,11 @@ GOLD_TABLE = "goodreads.gold_pages_per_day"
 # Data loading
 # ---------------------------------------------------------------------------
 def load_data() -> pd.DataFrame:
-    with sql.connect(server_hostname="", http_path="") as connection:
+    with sql.connect(
+        server_hostname=_sdk.config.host,
+        http_path=os.environ["DATABRICKS_HTTP_PATH"],
+        access_token=_sdk.config.token,
+    ) as connection:
         with connection.cursor() as cursor:
             cursor.execute(
                 f"SELECT date, est_pages_read, books_in_progress "
