@@ -29,7 +29,7 @@ def load_data() -> pd.DataFrame:
 
     response = _sdk.statement_execution.execute_statement(
         warehouse_id=warehouse_id,
-        statement=f"SELECT date, est_pages_read, size(books_in_progress) AS books_in_progress FROM {GOLD_TABLE} ORDER BY date",
+        statement=f"SELECT date, est_pages_read, size(books_in_progress) AS books_in_progress, books_in_progress AS book_titles FROM {GOLD_TABLE} ORDER BY date",
         wait_timeout="0s",  # return immediately so we can poll with our own timeout
     )
     statement_id = response.statement_id
@@ -50,9 +50,11 @@ def load_data() -> pd.DataFrame:
     columns = [c.name for c in status.manifest.schema.columns]
     rows = status.result.data_array or []
     df = pd.DataFrame(rows, columns=columns)
+    import json
     df["date"] = pd.to_datetime(df["date"])
     df["est_pages_read"] = df["est_pages_read"].astype(float)
     df["books_in_progress"] = df["books_in_progress"].astype(int)
+    df["book_titles"] = df["book_titles"].apply(lambda x: json.loads(x) if x else [])
     return df
 
 
@@ -167,12 +169,16 @@ def update_charts(json_data, start_date, end_date, window):
     roll_col = df["est_pages_read"].rolling(window, min_periods=1).mean()
 
     # ── Pages per day chart ─────────────────────────────────────────────────
+    book_labels = df["book_titles"].apply(lambda titles: "<br>".join(f"• {t}" for t in titles))
+
     pages_fig = go.Figure()
     pages_fig.add_trace(
         go.Bar(
             x=df["date"], y=df["est_pages_read"],
             name="Daily pages",
             marker_color="rgba(99, 152, 218, 0.5)",
+            customdata=book_labels,
+            hovertemplate="<b>%{y:.1f} pages</b><br>%{customdata}<extra></extra>",
         )
     )
     pages_fig.add_trace(
@@ -181,6 +187,7 @@ def update_charts(json_data, start_date, end_date, window):
             name=f"{window}-day avg",
             line=dict(color="#1a56a4", width=2),
             mode="lines",
+            hoverinfo="skip",
         )
     )
     pages_fig.update_layout(
@@ -189,7 +196,7 @@ def update_charts(json_data, start_date, end_date, window):
         yaxis_title="Pages",
         template="plotly_white",
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        hovermode="x unified",
+        hovermode="closest",
     )
 
     # ── Books in progress chart ─────────────────────────────────────────────
@@ -201,6 +208,8 @@ def update_charts(json_data, start_date, end_date, window):
             fill="tozeroy",
             line=dict(color="#e07b39", width=2),
             fillcolor="rgba(224, 123, 57, 0.2)",
+            customdata=df["book_titles"].apply(lambda titles: "<br>".join(f"• {t}" for t in titles)),
+            hovertemplate="<b>%{y} book(s)</b><br>%{customdata}<extra></extra>",
         )
     )
     books_fig.update_layout(
@@ -208,7 +217,7 @@ def update_charts(json_data, start_date, end_date, window):
         xaxis_title="Date",
         yaxis_title="# books",
         template="plotly_white",
-        hovermode="x unified",
+        hovermode="closest",
         yaxis=dict(dtick=1),
     )
 
