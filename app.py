@@ -3,6 +3,8 @@ Goodreads — Pages Per Day Dashboard
 Databricks App that visualises the gold_pages_per_day table using Dash + Plotly.
 """
 
+import os
+
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
@@ -180,8 +182,5 @@ def update_charts(json_data, start_date, end_date, window):
     return pages_fig, books_fig
 
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 8050)))
