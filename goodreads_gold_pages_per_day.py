@@ -81,15 +81,15 @@ print(f"Total daily rows: {daily.count():,}")
 # COMMAND ----------
 
 # DBTITLE 1,Aggregate and display
-from pyspark.sql.functions import sum as spark_sum, round as spark_round, count as spark_count
+from pyspark.sql.functions import sum as spark_sum, round as spark_round, collect_list
 
 result = (
     daily
     .groupBy("date")
     .agg(
-        spark_round(spark_sum("pages_per_day"),1).alias("est_pages_read"),
-        spark_count("title").alias("books_in_progress"),
-    ) 
+        spark_round(spark_sum("pages_per_day"), 1).alias("est_pages_read"),
+        collect_list("title").alias("books_in_progress"),
+    )
     .orderBy("date")
 )
 
