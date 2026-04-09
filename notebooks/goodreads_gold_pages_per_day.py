@@ -56,34 +56,55 @@ print(f"\nModelling {filtered.count()} books")
 
 # COMMAND ----------
 
-# DBTITLE 1,Compute pages_per_day per book
-from pyspark.sql.functions import datediff, greatest, lit
+# DBTITLE 1,Compute effective reading days per book
+from pyspark.sql.functions import datediff, lit, when
+
+# Distinct sets of all start / finish dates across all books
+all_starts   = filtered.select(col("started_reading").alias("s_date")).distinct()
+all_finishes = filtered.select(col("read_at").alias("f_date")).distinct()
 
 modelled = (
     filtered
-    .withColumn("reading_days", greatest(datediff(col("read_at"), col("started_reading")), lit(1)))
-    .withColumn("base_pages_per_day", col("num_pages") / col("reading_days"))
+    # Does another book finish on the same day this book starts?
+    .join(all_finishes, col("started_reading") == col("f_date"), "left")
+    .withColumn("start_shares_finish", col("f_date").isNotNull())
+    .drop("f_date")
+    # Does another book start on the same day this book finishes?
+    .join(all_starts, col("read_at") == col("s_date"), "left")
+    .withColumn("finish_shares_start", col("s_date").isNotNull())
+    .drop("s_date")
+    # Effective days = calendar days minus 0.5 for each shared boundary
+    # Division is deferred to the explode step to avoid divide-by-zero
+    .withColumn(
+        "effective_reading_days",
+        when(col("started_reading") == col("read_at"), lit(1.0))
+        .otherwise(
+            (datediff(col("read_at"), col("started_reading")) + 1).cast("double")
+            - when(col("start_shares_finish"),  lit(0.5)).otherwise(lit(0.0))
+            - when(col("finish_shares_start"), lit(0.5)).otherwise(lit(0.0))
+        )
+    )
 )
 
-display(modelled.select("title", "started_reading", "read_at", "num_pages", "reading_days", "base_pages_per_day"))
+display(modelled.select("title", "started_reading", "read_at", "num_pages",
+                        "start_shares_finish", "finish_shares_start", "effective_reading_days"))
 
 # COMMAND ----------
 
 # DBTITLE 1,Explode into one row per calendar day per book
-from pyspark.sql.functions import sequence, explode, when, lit
+from pyspark.sql.functions import sequence, explode
 
 daily = (
     modelled
     .withColumn("date", explode(sequence(col("started_reading"), col("read_at"))))
     .withColumn(
         "weight",
-        when(
-            col("started_reading") == col("read_at"), lit(1.0)
-        ).when(
-            (col("date") == col("started_reading")) | (col("date") == col("read_at")), lit(0.5)
-        ).otherwise(lit(1.0))
+        when(col("started_reading") == col("read_at"), lit(1.0))
+        .when((col("date") == col("started_reading")) & col("start_shares_finish"),  lit(0.5))
+        .when((col("date") == col("read_at")) & col("finish_shares_start"), lit(0.5))
+        .otherwise(lit(1.0))
     )
-    .withColumn("pages_per_day", col("base_pages_per_day") * col("weight"))
+    .withColumn("pages_per_day", col("num_pages") * col("weight") / col("effective_reading_days"))
     .select("date", "title", "pages_per_day")
 )
 
