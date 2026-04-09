@@ -29,6 +29,7 @@ def load_data() -> pd.DataFrame:
         server_hostname=urlparse(_sdk.config.host).hostname,
         http_path=f"/sql/1.0/warehouses/{os.environ['DATABRICKS_WAREHOUSE_ID']}",
         access_token=_sdk.config.token,
+        _socket_timeout=120,
     ) as connection:
         with connection.cursor() as cursor:
             cursor.execute(
@@ -91,7 +92,7 @@ app.layout = html.Div(
             ],
         ),
 
-        html.Div(id="loading-status", style={"color": "#888", "fontSize": "13px", "marginBottom": "8px"}),
+        html.Div(id="loading-status", style={"fontSize": "13px", "marginBottom": "8px", "color": "#c0392b"}),
 
         dcc.Loading(
             type="circle",
@@ -117,6 +118,7 @@ app.layout = html.Div(
     Output("date-range", "max_date_allowed"),
     Output("date-range", "start_date"),
     Output("date-range", "end_date"),
+    Output("loading-status", "children"),
     Input("refresh-interval", "n_intervals"),
     background=True,
     running=[
@@ -124,10 +126,13 @@ app.layout = html.Div(
     ],
 )
 def refresh_data(_n):
-    df = load_data()
-    min_date = df["date"].min().date().isoformat()
-    max_date = df["date"].max().date().isoformat()
-    return df.to_json(date_format="iso", orient="split"), min_date, max_date, min_date, max_date
+    try:
+        df = load_data()
+        min_date = df["date"].min().date().isoformat()
+        max_date = df["date"].max().date().isoformat()
+        return df.to_json(date_format="iso", orient="split"), min_date, max_date, min_date, max_date, ""
+    except Exception as e:
+        return None, None, None, None, None, f"Error loading data: {e}"
 
 
 @app.callback(
