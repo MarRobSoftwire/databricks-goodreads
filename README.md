@@ -25,7 +25,7 @@ databricks bundle deploy
 The app source code then needs to be deployed separately
 ```bash
 databricks apps deploy goodreads-app \
-  --source-code-path /Workspace/Users/$(databricks current-user me --output json | jq -r '.userName')/.bundle/goodreads_bundle/dev/files/app \
+  --source-code-path /Workspace/Shared/.bundle/goodreads_bundle/dev/files/app \
   --mode SNAPSHOT
 ```
 
@@ -47,6 +47,14 @@ databricks grants update table goodreads.gold_pages_per_day \
 
 The env var will need to be provided from app.yml so the UI is probably simplest
 
+
+The CI service principal also needs `CAN_MANAGE` on the app (one-time):
+
+Currenlty not working, can be assigned in the UI
+```bash
+databricks apps set-permissions goodreads-app \
+  --json '{"access_control_list": [{"service_principal_name": "<sp-id>", "permission_level": "CAN_MANAGE"}]}'
+```
 
 #### GitHub Actions
 

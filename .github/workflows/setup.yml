@@ -13,7 +13,6 @@ jobs:
     name: Bind bundle to existing app
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
       contents: read
     steps:
       - uses: actions/checkout@v6
@@ -21,7 +20,7 @@ jobs:
       - name: Bind bundle resource to existing app
         run: databricks bundle deployment bind goodreads_app "${{ github.event.inputs.app_id }}"
         env:
-          DATABRICKS_AUTH_TYPE: github-oidc
           DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
           DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
-          DATABRICKS_BUNDLE_ENV: prod
+          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+          DATABRICKS_BUNDLE_ENV: dev
