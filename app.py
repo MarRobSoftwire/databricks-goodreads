@@ -25,7 +25,7 @@ GOLD_TABLE = "goodreads.gold_pages_per_day"
 # ---------------------------------------------------------------------------
 def load_data() -> pd.DataFrame:
     with sql.connect(
-        server_hostname=_sdk.config.host,
+        server_hostname=_sdk.config.host.lstrip("https://"),
         http_path=os.environ["DATABRICKS_HTTP_PATH"],
         access_token=_sdk.config.token,
     ) as connection:
