@@ -84,9 +84,14 @@ display(start_dates)
 # COMMAND ----------
 
 # DBTITLE 1,Join with silver_books and write enriched table
+from pyspark.sql.functions import current_timestamp
+
 silver = spark.table(SILVER_TABLE)
 
-enriched = silver.join(start_dates, on="book_id", how="left")
+enriched = (
+    silver.join(start_dates, on="book_id", how="left")
+    .withColumn("_enriched_at", current_timestamp())
+)
 
 display(enriched.select("title", "author", "started_reading", "read_at", "user_rating"))
 
