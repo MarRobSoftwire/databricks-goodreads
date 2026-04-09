@@ -4,7 +4,8 @@ Databricks App that visualises the gold_pages_per_day table using Dash + Plotly.
 """
 
 import os
-
+from urllib.parse import urlparse
+import diskcache
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
@@ -25,7 +26,7 @@ GOLD_TABLE = "goodreads.gold_pages_per_day"
 # ---------------------------------------------------------------------------
 def load_data() -> pd.DataFrame:
     with sql.connect(
-        server_hostname=_sdk.config.host.lstrip("https://"),
+        server_hostname=urlparse(_sdk.config.host).hostname,
         http_path=f"/sql/1.0/warehouses/{os.environ['DATABRICKS_WAREHOUSE_ID']}",
         access_token=_sdk.config.token,
     ) as connection:
@@ -47,7 +48,10 @@ def load_data() -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # App layout
 # ---------------------------------------------------------------------------
-app = dash.Dash(__name__)
+cache = diskcache.Cache("./cache")
+background_callback_manager = dash.DiskcacheManager(cache)
+
+app = dash.Dash(__name__, background_callback_manager=background_callback_manager)
 app.title = "Goodreads - Pages Per Day"
 
 app.layout = html.Div(
@@ -87,8 +91,15 @@ app.layout = html.Div(
             ],
         ),
 
-        dcc.Graph(id="pages-chart", style={"height": "480px"}),
-        dcc.Graph(id="books-chart", style={"height": "300px"}),
+        html.Div(id="loading-status", style={"color": "#888", "fontSize": "13px", "marginBottom": "8px"}),
+
+        dcc.Loading(
+            type="circle",
+            children=[
+                dcc.Graph(id="pages-chart", style={"height": "480px"}),
+                dcc.Graph(id="books-chart", style={"height": "300px"}),
+            ],
+        ),
 
         # Hidden store holds the full dataset after initial load
         dcc.Store(id="store-data"),
@@ -107,6 +118,10 @@ app.layout = html.Div(
     Output("date-range", "start_date"),
     Output("date-range", "end_date"),
     Input("refresh-interval", "n_intervals"),
+    background=True,
+    running=[
+        (Output("loading-status", "children"), "Starting warehouse and loading data…", ""),
+    ],
 )
 def refresh_data(_n):
     df = load_data()
