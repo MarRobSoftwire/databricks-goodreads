@@ -42,11 +42,26 @@ resources:
       name: 'goodreads-app'
       source_code_path: app
       description: 'A goodreads dashboard'
+      # Resources declared here are applied by `bundle deploy`.
+      # The deploy workflow then upserts any extras the bundle schema cannot express
+      # (e.g. UC TABLE securables) — see .github/workflows/deploy.yml.
       resources:
         - name: sql_warehouse
           sql_warehouse:
             id: b5e8bae3847f4c31
             permission: CAN_USE
+        - name: pages_job
+          description: 'Pages re-ingestion job'
+          job:
+            id: ${resources.jobs.pages_job.id}
+            permission: CAN_MANAGE_RUN
+        # UC Tables are not currently supported in the bundle YAML schema
+        #
+        # - name: pages_per_day_table
+        #   uc_securable:
+        #     securable_full_name: workspace.goodreads.gold_pages_per_day
+        #     securable_type: TABLE
+        #     permission: SELECT
 
 targets:
   dev:

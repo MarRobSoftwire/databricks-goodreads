@@ -30,16 +30,18 @@ jobs:
       # UC table resources (securable_type: TABLE) are not supported in the bundle
       # YAML schema — only VOLUME is supported via uc_securable
       # (https://docs.databricks.com/aws/en/dev-tools/bundles/resources#appresourcesuc_securable).
-      # This step re-applies the UC table resource after every deploy via the REST API.
+      # This step fetches the resources already applied by bundle deploy, then upserts
+      # the extras the bundle schema cannot express. databricks.yml is the single source
+      # of truth for all bundle-manageable resources — this step only needs updating when
+      # the UC TABLE extras list below changes.
       # (https://docs.databricks.com/api/workspace/apps/update)
       - name: Patch app UC table resource
         run: |
-          cat > /tmp/app-resources.json << EOF
-          {
-            "resources": [
-              {"name": "sql_warehouse", "sql_warehouse": {"id": "b5e8bae3847f4c31", "permission": "CAN_USE"}},
-              {"name": "pages_per_day_table", "uc_securable": {"securable_full_name": "workspace.goodreads.gold_pages_per_day", "securable_type": "TABLE", "permission": "SELECT"}}
-            ]
-          }
-          EOF
-          databricks api patch /api/2.0/apps/goodreads-app --json @/tmp/app-resources.json
+          CURRENT=$(databricks api get /api/2.0/apps/goodreads-app | jq '.resources // []')
+
+          EXTRAS='[{"name":"pages_per_day_table","uc_securable":{"securable_full_name":"workspace.goodreads.gold_pages_per_day","securable_type":"TABLE","permission":"SELECT"}}]'
+
+          MERGED=$(jq -n --argjson current "$CURRENT" --argjson extras "$EXTRAS" \
+            '($current + $extras) | group_by(.name) | map(last)')
+
+          databricks api patch /api/2.0/apps/goodreads-app --json "{\"resources\": $MERGED}"

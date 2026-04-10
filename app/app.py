@@ -104,6 +104,19 @@ app.layout = html.Div(
             ],
         ),
 
+        html.Div(
+            style={"marginBottom": "16px"},
+            children=[
+                html.Button(
+                    "Re-ingest data",
+                    id="reingest-button",
+                    n_clicks=0,
+                    style={"padding": "6px 16px", "cursor": "pointer"},
+                ),
+                html.Div(id="job-status", style={"marginTop": "8px", "fontSize": "13px", "color": "#555"}),
+            ],
+        ),
+
         html.Div(id="loading-message", style={"fontSize": "13px", "marginBottom": "8px", "color": "#888"}),
         html.Div(id="error-message", style={"fontSize": "13px", "marginBottom": "8px", "color": "#c0392b"}),
 
@@ -113,6 +126,9 @@ app.layout = html.Div(
         # Hidden store holds the full dataset after initial load
         dcc.Store(id="store-data"),
         dcc.Interval(id="refresh-interval", interval=5 * 60 * 1000, n_intervals=0),  # refresh every 5 min
+        # Job triggering
+        dcc.Store(id="run-id-store"),
+        dcc.Interval(id="job-poll-interval", interval=5000, disabled=True),
     ],
 )
 
@@ -222,6 +238,71 @@ def update_charts(json_data, start_date, end_date, window):
     )
 
     return pages_fig, books_fig
+
+
+@app.callback(
+    Output("run-id-store", "data"),
+    Output("job-poll-interval", "disabled", allow_duplicate=True),
+    Output("reingest-button", "disabled"),
+    Input("reingest-button", "n_clicks"),
+    prevent_initial_call=True,
+    background=True,
+    running=[
+        (Output("job-status", "children"), "Submitting job…", ""),
+        (Output("reingest-button", "disabled"), True, False),
+    ],
+)
+def trigger_reingest(n_clicks):
+    if not n_clicks:
+        return dash.no_update, dash.no_update, dash.no_update
+    waiter = _sdk.jobs.run_now(job_id=int(os.environ["JOB_ID"]))
+    return waiter.run_id, False, False
+
+
+_TERMINAL_STATES = {"TERMINATED", "SKIPPED", "INTERNAL_ERROR"}
+_STATE_LABELS = {
+    "PENDING": "⏳",
+    "RUNNING": "🔄",
+    "TERMINATED": "✅",
+    "SKIPPED": "⏭",
+    "INTERNAL_ERROR": "❌",
+    "BLOCKED": "🔒",
+    "WAITING_FOR_RETRY": "🔁",
+}
+
+
+@app.callback(
+    Output("job-status", "children"),
+    Output("job-poll-interval", "disabled"),
+    Output("run-id-store", "data", allow_duplicate=True),
+    Input("job-poll-interval", "n_intervals"),
+    dash.dependencies.State("run-id-store", "data"),
+    prevent_initial_call=True,
+)
+def poll_job_status(_n, run_id):
+    if run_id is None:
+        return dash.no_update, True, dash.no_update
+    try:
+        run = _sdk.jobs.get_run(run_id=run_id)
+    except Exception as exc:
+        return f"Error polling job: {exc}", True, None
+
+    overall = run.state.life_cycle_state.value if run.state and run.state.life_cycle_state else "PENDING"
+    tasks = run.tasks or []
+    task_lines = []
+    for t in tasks:
+        state = t.state.life_cycle_state.value if t.state and t.state.life_cycle_state else "PENDING"
+        icon = _STATE_LABELS.get(state, state)
+        task_lines.append(f"{icon} {t.task_key}: {state}")
+
+    if overall in _TERMINAL_STATES:
+        result = run.state.result_state.value if run.state and run.state.result_state else ""
+        summary = f"Job {result or overall}" + (f" — {run.state.state_message}" if run.state and run.state.state_message else "")
+        status_text = summary + (" | " + "  ·  ".join(task_lines) if task_lines else "")
+        return status_text, True, None
+
+    status_text = f"Job {overall}" + (" | " + "  ·  ".join(task_lines) if task_lines else "")
+    return status_text, False, run_id
 
 
 if __name__ == "__main__":
