@@ -3,6 +3,23 @@ bundle:
 
 resources:
   jobs:
+    books_job:
+      name: goodreads-books-job
+      tasks:
+        - task_key: bronze_books
+          notebook_task:
+            notebook_path: ./notebooks/goodreads_bronze.py
+        - task_key: silver_books
+          depends_on:
+            - task_key: bronze_books
+          notebook_task:
+            notebook_path: ./notebooks/goodreads_silver.py
+        - task_key: run_pages_job
+          depends_on:
+            - task_key: silver_books
+          run_job_task:
+            job_id: ${resources.jobs.pages_job.id}
+
     pages_job:
       name: goodreads-pages-job
       tasks:
