@@ -35,15 +35,11 @@ print(f"Latest ingestion: {latest_ts}  —  {bronze_latest.count()} books")
 # COMMAND ----------
 
 # DBTITLE 1,Cast types and clean text fields
-from dateutil import parser as dateutil_parser
+from goodreads_utils import parse_date as _parse_date
 from pyspark.sql.functions import udf
 from pyspark.sql.types import DateType
 
-@udf(DateType())
-def parse_date(raw):
-    if not raw:
-        return None
-    return dateutil_parser.parse(raw).date()
+parse_date = udf(_parse_date, DateType())
 
 silver = (
     bronze_latest

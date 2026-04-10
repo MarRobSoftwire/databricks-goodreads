@@ -59,14 +59,7 @@ display(urls_df)
 # DBTITLE 1,Fetch raw HTML from each review page
 import urllib.request
 import time
-
-def assert_authenticated(html: str, book_id: str):
-    if book_id not in html:
-        print(f"[{book_id}] Auth failed — HTML preview: {html[:500].strip()!r}")
-        raise RuntimeError(
-            f"Book ID '{book_id}' not found in response. "
-            "Cookie may have expired — update the Databricks secret and re-run."
-        )
+from goodreads_bronze_pages_utils import assert_authenticated
 
 rows = []
 for row in urls_df.collect():

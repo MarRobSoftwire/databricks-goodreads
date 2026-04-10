@@ -21,39 +21,16 @@ SILVER_OUT_TABLE   = "goodreads.silver_books_enriched"
 # COMMAND ----------
 
 # DBTITLE 1,Parse started_reading date from raw HTML
-from bs4 import BeautifulSoup
-from dateutil import parser as dateutil_parser
+from goodreads_silver_pages_utils import extract_start_date_str as _extract_start_date_str
+from goodreads_utils import parse_date as _parse_date
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, max as spark_max, udf
 from pyspark.sql.types import StringType, DateType
 
 spark = SparkSession.builder.getOrCreate()
 
-@udf(StringType())
-def extract_start_date_str(raw_html):
-    """
-    Finds the readingTimeline row containing 'Started Reading'
-    and returns the raw date string (e.g. 'March 29, 2026').
-    Returns None if no start date is recorded.
-    """
-    if not raw_html:
-        return None
-    soup = BeautifulSoup(raw_html, "html.parser")
-    matches = [
-        row.get_text(separator=" ", strip=True)
-        for row in soup.find_all("div", class_="readingTimeline__text")
-        if "Started Reading" in row.get_text() and "–" in row.get_text()
-    ]
-    if not matches:
-        return None
-    # Use the last entry in case the book was read multiple times
-    return matches[-1].split("–")[0].strip()
-
-@udf(DateType())
-def parse_date(raw):
-    if not raw:
-        return None
-    return dateutil_parser.parse(raw).date()
+extract_start_date_str = udf(_extract_start_date_str, StringType())
+parse_date = udf(_parse_date, DateType())
 
 # COMMAND ----------
 
