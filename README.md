@@ -63,6 +63,8 @@ Two workflows are defined in `.github/workflows/`:
 - **`deploy.yml`** — runs `databricks bundle deploy` on every push to `main`. Requires `DATABRICKS_HOST` and `DATABRICKS_TOKEN` secrets set in the repo.
 - **`setup.yml`** — manually triggered (`workflow_dispatch`). Runs the one-time `databricks bundle deployment bind` to link the bundle to an existing app. Takes the app name as an input (default: `goodreads-app`).
 
+Several secrets/variables are needed in order for the pipeline to run including a service principle. This service principal will need to be given sufficient permissions to manage the UC table
+
 #### Documentation:
 
 - [Deploy a Databricks app](https://docs.databricks.com/aws/en/dev-tools/databricks-apps/deploy)

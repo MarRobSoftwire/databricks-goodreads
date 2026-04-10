@@ -38,7 +38,7 @@ jobs:
           {
             "resources": [
               {"name": "sql_warehouse", "sql_warehouse": {"id": "b5e8bae3847f4c31", "permission": "CAN_USE"}},
-              {"name": "uc_table", "uc_securable": {"securable_full_name": "workspace.goodreads.gold_pages_per_day", "securable_type": "TABLE", "permission": "SELECT"}}
+              {"name": "pages_per_day_table", "uc_securable": {"securable_full_name": "workspace.goodreads.gold_pages_per_day", "securable_type": "TABLE", "permission": "SELECT"}}
             ]
           }
           EOF
