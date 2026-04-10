@@ -4,59 +4,20 @@ Databricks App that visualises the gold_pages_per_day table using Dash + Plotly.
 """
 
 import os
-import diskcache
+
 import dash
+import diskcache
+import pandas as pd
+import plotly.graph_objects as go
 from dash import dcc, html
 from dash.dependencies import Input, Output
-import plotly.graph_objects as go
-import pandas as pd
-import time
 from databricks.sdk import WorkspaceClient
-from databricks.sdk.service.sql import StatementState
+
+from data import GOLD_TABLE, load_data
+from figures import make_books_chart, make_pages_chart
+from job_status import format_run_status
 
 _sdk = WorkspaceClient()  # auto-configured by the Databricks App runtime
-
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-GOLD_TABLE = os.environ.get("TABLE_NAME", "goodreads.gold_pages_per_day")
-
-# ---------------------------------------------------------------------------
-# Data loading
-# ---------------------------------------------------------------------------
-def load_data() -> pd.DataFrame:
-    warehouse_id = os.environ["DATABRICKS_WAREHOUSE_ID"]
-
-    response = _sdk.statement_execution.execute_statement(
-        warehouse_id=warehouse_id,
-        statement=f"SELECT date, est_pages_read, size(books_in_progress) AS books_in_progress, books_in_progress AS book_titles FROM {GOLD_TABLE} ORDER BY date",
-        wait_timeout="0s",  # return immediately so we can poll with our own timeout
-    )
-    statement_id = response.statement_id
-
-    deadline = time.time() + 300  # 5 min — enough for a cold warehouse start
-    while time.time() < deadline:
-        status = _sdk.statement_execution.get_statement(statement_id)
-        state = status.status.state
-        if state == StatementState.SUCCEEDED:
-            break
-        if state in (StatementState.FAILED, StatementState.CANCELED, StatementState.CLOSED):
-            raise RuntimeError(f"Query failed: {status.status.error}")
-        time.sleep(3)
-    else:
-        _sdk.statement_execution.cancel_execution(statement_id)
-        raise TimeoutError("Query timed out after 5 minutes")
-
-    columns = [c.name for c in status.manifest.schema.columns]
-    rows = status.result.data_array or []
-    df = pd.DataFrame(rows, columns=columns)
-    import json
-    df["date"] = pd.to_datetime(df["date"])
-    df["est_pages_read"] = df["est_pages_read"].astype(float)
-    df["books_in_progress"] = df["books_in_progress"].astype(int)
-    df["book_titles"] = df["book_titles"].apply(lambda x: json.loads(x) if x else [])
-    return df
-
 
 # ---------------------------------------------------------------------------
 # App layout
@@ -123,10 +84,8 @@ app.layout = html.Div(
         dcc.Graph(id="pages-chart", style={"height": "480px"}),
         dcc.Graph(id="books-chart", style={"height": "300px"}),
 
-        # Hidden store holds the full dataset after initial load
         dcc.Store(id="store-data"),
-        dcc.Interval(id="refresh-interval", interval=5 * 60 * 1000, n_intervals=0),  # refresh every 5 min
-        # Job triggering
+        dcc.Interval(id="refresh-interval", interval=5 * 60 * 1000, n_intervals=0),
         dcc.Store(id="run-id-store"),
         dcc.Interval(id="job-poll-interval", interval=5000, disabled=True),
     ],
@@ -151,7 +110,7 @@ app.layout = html.Div(
 )
 def refresh_data(_n):
     try:
-        df = load_data()
+        df = load_data(_sdk)
         min_date = df["date"].min().date().isoformat()
         max_date = df["date"].max().date().isoformat()
         return df.to_json(date_format="iso", orient="split"), min_date, max_date, min_date, max_date, ""
@@ -182,62 +141,7 @@ def update_charts(json_data, start_date, end_date, window):
         df = df[df["date"] <= end_date]
 
     df = df.sort_values("date")
-    roll_col = df["est_pages_read"].rolling(window, min_periods=1).mean()
-
-    # ── Pages per day chart ─────────────────────────────────────────────────
-    book_labels = df["book_titles"].apply(lambda titles: "<br>".join(f"• {t}" for t in titles))
-
-    pages_fig = go.Figure()
-    pages_fig.add_trace(
-        go.Bar(
-            x=df["date"], y=df["est_pages_read"],
-            name="Daily pages",
-            marker_color="rgba(99, 152, 218, 0.5)",
-            customdata=book_labels,
-            hovertemplate="<b>%{y:.1f} pages</b><br>%{customdata}<extra></extra>",
-        )
-    )
-    pages_fig.add_trace(
-        go.Scatter(
-            x=df["date"], y=roll_col,
-            name=f"{window}-day avg",
-            line=dict(color="#1a56a4", width=2),
-            mode="lines",
-            hoverinfo="skip",
-        )
-    )
-    pages_fig.update_layout(
-        title="Estimated Pages Read Per Day",
-        xaxis_title="Date",
-        yaxis_title="Pages",
-        template="plotly_white",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        hovermode="closest",
-    )
-
-    # ── Books in progress chart ─────────────────────────────────────────────
-    books_fig = go.Figure()
-    books_fig.add_trace(
-        go.Scatter(
-            x=df["date"], y=df["books_in_progress"],
-            name="Books in progress",
-            fill="tozeroy",
-            line=dict(color="#e07b39", width=2),
-            fillcolor="rgba(224, 123, 57, 0.2)",
-            customdata=df["book_titles"].apply(lambda titles: "<br>".join(f"• {t}" for t in titles)),
-            hovertemplate="<b>%{y} book(s)</b><br>%{customdata}<extra></extra>",
-        )
-    )
-    books_fig.update_layout(
-        title="Books Being Read Concurrently",
-        xaxis_title="Date",
-        yaxis_title="# books",
-        template="plotly_white",
-        hovermode="closest",
-        yaxis=dict(dtick=1),
-    )
-
-    return pages_fig, books_fig
+    return make_pages_chart(df, window), make_books_chart(df)
 
 
 @app.callback(
@@ -259,18 +163,6 @@ def trigger_reingest(n_clicks):
     return waiter.run_id, False, False
 
 
-_TERMINAL_STATES = {"TERMINATED", "SKIPPED", "INTERNAL_ERROR"}
-_STATE_LABELS = {
-    "PENDING": "⏳",
-    "RUNNING": "🔄",
-    "TERMINATED": "✅",
-    "SKIPPED": "⏭",
-    "INTERNAL_ERROR": "❌",
-    "BLOCKED": "🔒",
-    "WAITING_FOR_RETRY": "🔁",
-}
-
-
 @app.callback(
     Output("job-status", "children"),
     Output("job-poll-interval", "disabled"),
@@ -287,22 +179,8 @@ def poll_job_status(_n, run_id):
     except Exception as exc:
         return f"Error polling job: {exc}", True, None
 
-    overall = run.state.life_cycle_state.value if run.state and run.state.life_cycle_state else "PENDING"
-    tasks = run.tasks or []
-    task_lines = []
-    for t in tasks:
-        state = t.state.life_cycle_state.value if t.state and t.state.life_cycle_state else "PENDING"
-        icon = _STATE_LABELS.get(state, state)
-        task_lines.append(f"{icon} {t.task_key}: {state}")
-
-    if overall in _TERMINAL_STATES:
-        result = run.state.result_state.value if run.state and run.state.result_state else ""
-        summary = f"Job {result or overall}" + (f" — {run.state.state_message}" if run.state and run.state.state_message else "")
-        status_text = summary + (" | " + "  ·  ".join(task_lines) if task_lines else "")
-        return status_text, True, None
-
-    status_text = f"Job {overall}" + (" | " + "  ·  ".join(task_lines) if task_lines else "")
-    return status_text, False, run_id
+    status_text, is_terminal = format_run_status(run)
+    return status_text, is_terminal, (None if is_terminal else run_id)
 
 
 if __name__ == "__main__":
