@@ -59,20 +59,20 @@ print(f"\nModelling {filtered.count()} books")
 # DBTITLE 1,Compute effective reading days per book
 from pyspark.sql.functions import datediff, lit, when
 
-# Distinct sets of all start / finish dates across all books
-all_starts   = filtered.select(col("started_reading").alias("s_date")).distinct()
-all_finishes = filtered.select(col("read_at").alias("f_date")).distinct()
+# Distinct sets of all start / finish dates per user
+all_starts   = filtered.select(col("username").alias("s_username"), col("started_reading").alias("s_date")).distinct()
+all_finishes = filtered.select(col("username").alias("f_username"), col("read_at").alias("f_date")).distinct()
 
 modelled = (
     filtered
-    # Does another book finish on the same day this book starts?
-    .join(all_finishes, col("started_reading") == col("f_date"), "left")
+    # Does another book finish on the same day this book starts (for the same user)?
+    .join(all_finishes, (col("username") == col("f_username")) & (col("started_reading") == col("f_date")), "left")
     .withColumn("start_shares_finish", col("f_date").isNotNull())
-    .drop("f_date")
-    # Does another book start on the same day this book finishes?
-    .join(all_starts, col("read_at") == col("s_date"), "left")
+    .drop("f_date", "f_username")
+    # Does another book start on the same day this book finishes (for the same user)?
+    .join(all_starts, (col("username") == col("s_username")) & (col("read_at") == col("s_date")), "left")
     .withColumn("finish_shares_start", col("s_date").isNotNull())
-    .drop("s_date")
+    .drop("s_date", "s_username")
     # Effective days = calendar days minus 0.5 for each shared boundary
     # Division is deferred to the explode step to avoid divide-by-zero
     .withColumn(
