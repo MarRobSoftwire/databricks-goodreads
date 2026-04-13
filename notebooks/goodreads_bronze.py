@@ -8,31 +8,29 @@
 # COMMAND ----------
 
 # DBTITLE 1,Configuration
-RSS_URL = (
-    "https://www.goodreads.com/review/list_rss/178442944"
-    "?shelf=read"
-)
+RSS_URLS = [
+    "https://www.goodreads.com/review/list_rss/178442944?shelf=read",
+    "https://www.goodreads.com/review/list_rss/179258507?shelf=read",
+]
 
 BRONZE_TABLE = "goodreads.bronze_rss"
 
 # COMMAND ----------
 
-# DBTITLE 1,Download RSS feed
+# DBTITLE 1,Download and parse RSS feeds
 import urllib.request
-
-with urllib.request.urlopen(RSS_URL) as response:
-    rss_bytes = response.read()
-
-print(f"Downloaded {len(rss_bytes):,} bytes")
-
-# COMMAND ----------
-
-# DBTITLE 1,Parse XML — no transformations applied
 from goodreads_bronze_utils import parse_rss_items
 
-books = parse_rss_items(rss_bytes)
+books = []
+for url in RSS_URLS:
+    with urllib.request.urlopen(url) as response:
+        rss_bytes = response.read()
+    user_books = parse_rss_items(rss_bytes)
+    books.extend(user_books)
+    username = user_books[0]["username"] if user_books else url
+    print(f"[{username}] Downloaded {len(rss_bytes):,} bytes, parsed {len(user_books)} books")
 
-print(f"Parsed {len(books)} books")
+print(f"Total: {len(books)} books across {len(RSS_URLS)} user(s)")
 
 # COMMAND ----------
 
