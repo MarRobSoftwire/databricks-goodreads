@@ -13,7 +13,7 @@
 
 # DBTITLE 1,Configuration
 BRONZE_TABLE = "goodreads.bronze_open_library"
-SILVER_TABLE = "goodreads.silver_genres"
+SILVER_TABLE = "goodreads.silver_open_library"
 
 # COMMAND ----------
 
@@ -40,7 +40,7 @@ print(f"Latest batch: {latest_ts}  —  {total} rows ({has_data} ok, {no_data} n
 # COMMAND ----------
 
 # DBTITLE 1,Parse raw JSON into typed fields
-from goodreads_silver_genres_utils import parse_open_library_record as _parse
+from goodreads_silver_open_library_utils import parse_open_library_record as _parse
 from pyspark.sql.functions import udf
 from pyspark.sql.types import (
     ArrayType, IntegerType, StringType, StructField, StructType,

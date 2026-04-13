@@ -18,7 +18,7 @@
 
 # DBTITLE 1,Configuration
 SILVER_TABLE        = "goodreads.silver_books"
-BRONZE_GENRES_TABLE = "goodreads.bronze_open_library"
+BRONZE_TABLE = "goodreads.bronze_open_library"
 BATCH_SIZE          = 20   # ISBNs per request — keeps URLs well under limits
 REQUEST_DELAY_S     = 1    # polite delay between batch requests
 
@@ -46,7 +46,7 @@ print(f"Found {len(isbns)} distinct ISBNs to enrich")
 # DBTITLE 1,Fetch raw JSON from Open Library in batches
 import json
 import time
-from goodreads_bronze_genres_utils import fetch_batch
+from goodreads_bronze_open_library_utils import fetch_batch
 
 rows = []
 batches = [isbns[i:i + BATCH_SIZE] for i in range(0, len(isbns), BATCH_SIZE)]
@@ -113,7 +113,7 @@ df = (
     df.write
     .mode("append")
     .option("mergeSchema", "true")
-    .saveAsTable(BRONZE_GENRES_TABLE)
+    .saveAsTable(BRONZE_TABLE)
 )
 
-print(f"Appended {len(rows)} records to {BRONZE_GENRES_TABLE}")
+print(f"Appended {len(rows)} records to {BRONZE_TABLE}")

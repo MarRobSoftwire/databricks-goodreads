@@ -27,14 +27,19 @@ resources:
           run_job_task:
             job_id: ${resources.jobs.pages_job.id}
 
-    genres_job:
-      name: goodreads-genres-job
+    open_library_job:
+      name: goodreads-open-library-job
       run_as:
         service_principal_name: ${var.notebook_runner_sp}
       tasks:
-        - task_key: bronze_genres
+        - task_key: bronze_open_library
           notebook_task:
-            notebook_path: ./notebooks/goodreads_bronze_genres.py
+            notebook_path: ./notebooks/goodreads_bronze_open_library.py
+        - task_key: silver_open_library
+          depends_on:
+            - task_key: bronze_open_library
+          notebook_task:
+            notebook_path: ./notebooks/goodreads_silver_open_library.py
 
     pages_job:
       name: goodreads-pages-job
