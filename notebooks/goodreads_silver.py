@@ -53,7 +53,7 @@ silver = (
     .drop("book_description", "review")
 )
 
-silver.select("title", "author", "year_published", "num_pages", "user_rating", "average_rating", "read_at", "is_read").show(truncate=False)
+silver.select("username", "title", "author", "year_published", "num_pages", "user_rating", "average_rating", "read_at", "is_read").show(truncate=False)
 
 # COMMAND ----------
 
