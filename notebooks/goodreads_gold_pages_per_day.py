@@ -105,7 +105,7 @@ daily = (
         .otherwise(lit(1.0))
     )
     .withColumn("pages_per_day", col("num_pages") * col("weight") / col("effective_reading_days"))
-    .select("date", "title", "pages_per_day")
+    .select("date", "username", "title", "pages_per_day")
 )
 
 print(f"Total daily rows: {daily.count():,}")
@@ -117,12 +117,12 @@ from pyspark.sql.functions import sum as spark_sum, round as spark_round, collec
 
 result = (
     daily
-    .groupBy("date")
+    .groupBy("username", "date")
     .agg(
         spark_round(spark_sum("pages_per_day"), 1).alias("est_pages_read"),
         collect_list("title").alias("books_in_progress"),
     )
-    .orderBy("date")
+    .orderBy("username", "date")
 )
 
 display(result)
