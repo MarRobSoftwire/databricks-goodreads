@@ -105,6 +105,7 @@ df = (
 (
     df.write
     .mode("append")
+    .option("mergeSchema", "true")
     .saveAsTable(BRONZE_PAGES_TABLE)
 )
 
