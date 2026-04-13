@@ -5,5 +5,7 @@ env:
     valueFrom: sql_warehouse
   - name: TABLE_NAME
     valueFrom: pages_per_day_table
+  - name: GENRE_TABLE_NAME
+    valueFrom: gold_genre_table
   - name: JOB_ID
     valueFrom: pages_job

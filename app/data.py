@@ -6,7 +6,8 @@ import pandas as pd
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.sql import StatementState
 
-GOLD_TABLE = os.environ.get("TABLE_NAME", "goodreads.gold_pages_per_day")
+GOLD_TABLE       = os.environ.get("TABLE_NAME",       "goodreads.gold_pages_per_day")
+GOLD_GENRE_TABLE = os.environ.get("GENRE_TABLE_NAME", "goodreads.gold_genre")
 
 
 def load_data(sdk: WorkspaceClient) -> pd.DataFrame:
@@ -42,4 +43,39 @@ def load_data(sdk: WorkspaceClient) -> pd.DataFrame:
     df["est_pages_read"] = df["est_pages_read"].astype(float)
     df["books_in_progress"] = df["books_in_progress"].astype(int)
     df["book_titles"] = df["book_titles"].apply(lambda x: json.loads(x) if x else [])
+    return df
+
+
+def load_genre_data(sdk: WorkspaceClient) -> pd.DataFrame:
+    warehouse_id = os.environ["DATABRICKS_WAREHOUSE_ID"]
+
+    response = sdk.statement_execution.execute_statement(
+        warehouse_id=warehouse_id,
+        statement=(
+            f"SELECT username, genre, avg_user_rating, total_pages, book_count "
+            f"FROM {GOLD_GENRE_TABLE} ORDER BY username, genre"
+        ),
+        wait_timeout="0s",
+    )
+    statement_id = response.statement_id
+
+    deadline = time.time() + 300
+    while time.time() < deadline:
+        status = sdk.statement_execution.get_statement(statement_id)
+        state = status.status.state
+        if state == StatementState.SUCCEEDED:
+            break
+        if state in (StatementState.FAILED, StatementState.CANCELED, StatementState.CLOSED):
+            raise RuntimeError(f"Query failed: {status.status.error}")
+        time.sleep(3)
+    else:
+        sdk.statement_execution.cancel_execution(statement_id)
+        raise TimeoutError("Query timed out after 5 minutes")
+
+    columns = [c.name for c in status.manifest.schema.columns]
+    rows = status.result.data_array or []
+    df = pd.DataFrame(rows, columns=columns)
+    df["avg_user_rating"] = df["avg_user_rating"].astype(float)
+    df["total_pages"]     = df["total_pages"].astype(int)
+    df["book_count"]      = df["book_count"].astype(int)
     return df

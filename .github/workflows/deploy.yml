@@ -41,7 +41,7 @@ jobs:
         run: |
           CURRENT=$(databricks api get /api/2.0/apps/goodreads-app | jq '.resources // []')
 
-          EXTRAS='[{"name":"pages_per_day_table","uc_securable":{"securable_full_name":"workspace.goodreads.gold_pages_per_day","securable_type":"TABLE","permission":"SELECT"}}]'
+          EXTRAS='[{"name":"pages_per_day_table","uc_securable":{"securable_full_name":"workspace.goodreads.gold_pages_per_day","securable_type":"TABLE","permission":"SELECT"}},{"name":"gold_genre_table","uc_securable":{"securable_full_name":"workspace.goodreads.gold_genre","securable_type":"TABLE","permission":"SELECT"}}]'
 
           MERGED=$(jq -n --argjson current "$CURRENT" --argjson extras "$EXTRAS" \
             '($current + $extras) | group_by(.name) | map(last)')

@@ -13,8 +13,8 @@ from dash import dcc, html
 from dash.dependencies import Input, Output
 from databricks.sdk import WorkspaceClient
 
-from data import GOLD_TABLE, load_data
-from figures import make_books_chart, make_pages_chart
+from data import GOLD_GENRE_TABLE, GOLD_TABLE, load_data, load_genre_data
+from figures import make_books_chart, make_genre_chart, make_pages_chart
 from job_status import format_run_status
 
 _sdk = WorkspaceClient()  # auto-configured by the Databricks App runtime
@@ -84,7 +84,35 @@ app.layout = html.Div(
         dcc.Graph(id="pages-chart", style={"height": "480px"}),
         dcc.Graph(id="books-chart", style={"height": "300px"}),
 
+        html.Hr(style={"margin": "32px 0"}),
+        html.H2("Genre Breakdown", style={"marginBottom": "4px"}),
+        html.P(
+            f"Source: {GOLD_GENRE_TABLE}",
+            style={"color": "#666", "fontSize": "13px", "marginTop": "0", "marginBottom": "16px"},
+        ),
+        html.Div(
+            style={"marginBottom": "16px"},
+            children=[
+                html.Label("Metric", style={"fontWeight": "bold", "fontSize": "13px", "marginRight": "12px"}),
+                dcc.RadioItems(
+                    id="genre-metric",
+                    options=[
+                        {"label": "Avg Rating",  "value": "avg_user_rating"},
+                        {"label": "Total Pages", "value": "total_pages"},
+                        {"label": "Books Read",  "value": "book_count"},
+                    ],
+                    value="avg_user_rating",
+                    inline=True,
+                    inputStyle={"marginRight": "4px"},
+                    labelStyle={"marginRight": "16px"},
+                ),
+            ],
+        ),
+        html.Div(id="genre-error-message", style={"fontSize": "13px", "color": "#c0392b", "marginBottom": "8px"}),
+        dcc.Graph(id="genre-chart", style={"height": "500px"}),
+
         dcc.Store(id="store-data"),
+        dcc.Store(id="store-genre-data"),
         dcc.Interval(id="refresh-interval", interval=5 * 60 * 1000, n_intervals=0),
         dcc.Store(id="run-id-store"),
         dcc.Interval(id="job-poll-interval", interval=5000, disabled=True),
@@ -181,6 +209,34 @@ def poll_job_status(_n, run_id):
 
     status_text, is_terminal = format_run_status(run)
     return status_text, is_terminal, (None if is_terminal else run_id)
+
+
+@app.callback(
+    Output("store-genre-data", "data"),
+    Output("genre-error-message", "children"),
+    Input("refresh-interval", "n_intervals"),
+    background=True,
+)
+def refresh_genre_data(_n):
+    try:
+        df = load_genre_data(_sdk)
+        return df.to_json(orient="split"), ""
+    except Exception as e:
+        return None, f"Error loading genre data: {e}"
+
+
+@app.callback(
+    Output("genre-chart", "figure"),
+    Input("store-genre-data", "data"),
+    Input("genre-metric", "value"),
+)
+def update_genre_chart(json_data, metric):
+    if json_data is None:
+        fig = go.Figure()
+        fig.update_layout(template="plotly_white")
+        return fig
+    df = pd.read_json(json_data, orient="split")
+    return make_genre_chart(df, metric)
 
 
 if __name__ == "__main__":
