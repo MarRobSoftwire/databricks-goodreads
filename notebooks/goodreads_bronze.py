@@ -56,6 +56,7 @@ df.select("title", "author", "year_published", "num_pages", "user_rating", "aver
 (
     df.write
     .mode("append")
+    .option("mergeSchema", "true")
     .saveAsTable(BRONZE_TABLE)
 )
 
