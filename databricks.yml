@@ -40,6 +40,11 @@ resources:
             - task_key: bronze_open_library
           notebook_task:
             notebook_path: ./notebooks/goodreads_silver_open_library.py
+        - task_key: gold_genre
+          depends_on:
+            - task_key: silver_open_library
+          notebook_task:
+            notebook_path: ./notebooks/goodreads_gold_genre.py
 
     pages_job:
       name: goodreads-pages-job
