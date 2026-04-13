@@ -113,15 +113,41 @@ print(f"Total daily rows: {daily.count():,}")
 # COMMAND ----------
 
 # DBTITLE 1,Aggregate and display
-from pyspark.sql.functions import sum as spark_sum, round as spark_round, collect_list
+from pyspark.sql.functions import (
+    sum as spark_sum, round as spark_round, collect_list,
+    min as spark_min, max as spark_max, lit, coalesce, array,
+)
 
-result = (
+aggregated = (
     daily
     .groupBy("username", "date")
     .agg(
         spark_round(spark_sum("pages_per_day"), 1).alias("est_pages_read"),
         collect_list("title").alias("books_in_progress"),
     )
+)
+
+# Build a per-user date spine so days with no reading show up as 0
+user_date_bounds = (
+    filtered
+    .groupBy("username")
+    .agg(
+        spark_min("started_reading").alias("first_date"),
+        spark_max("read_at").alias("last_date"),
+    )
+)
+
+spine = (
+    user_date_bounds
+    .withColumn("date", explode(sequence(col("first_date"), col("last_date"))))
+    .select("username", "date")
+)
+
+result = (
+    spine
+    .join(aggregated, ["username", "date"], "left")
+    .withColumn("est_pages_read", coalesce(col("est_pages_read"), lit(0.0)))
+    .withColumn("books_in_progress", coalesce(col("books_in_progress"), array().cast("array<string>")))
     .orderBy("username", "date")
 )
 
