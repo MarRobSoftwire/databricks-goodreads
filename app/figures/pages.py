@@ -10,13 +10,20 @@ def make_pages_chart(df: pd.DataFrame, window: int) -> go.Figure:
         line_color = _COLORS[i % len(_COLORS)]
         udf = udf.sort_values("date")
         roll_col = udf["est_pages_read"].rolling(window, min_periods=1).mean()
+        book_labels = udf["book_titles"].apply(lambda titles: "<br>".join(f"• {t}" for t in titles))
+        customdata = list(zip(udf["est_pages_read"], book_labels))
         fig.add_trace(
             go.Scatter(
                 x=udf["date"], y=roll_col,
                 name=username,
                 line=dict(color=line_color, width=2),
                 mode="lines",
-                hovertemplate=f"<b>{username}</b>: %{{y:.1f}} pages<extra></extra>",
+                customdata=customdata,
+                hovertemplate=(
+                    f"<b>{username}</b> — %{{x|%d %b %Y}}<br>"
+                    "%{customdata[0]:.1f} pages<br>"
+                    "%{customdata[1]}<extra></extra>"
+                ),
             )
         )
     fig.update_layout(

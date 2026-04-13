@@ -17,7 +17,7 @@ def make_books_chart(df: pd.DataFrame) -> go.Figure:
                 line=dict(color=color, width=2),
                 fillcolor=f"rgba({r}, {g}, {b}, 0.2)",
                 customdata=udf["book_titles"].apply(lambda titles: "<br>".join(f"• {t}" for t in titles)),
-                hovertemplate="<b>%{y} book(s)</b><br>%{customdata}<extra></extra>",
+                hovertemplate=f"<b>{username}</b> — %{{x|%d %b %Y}}<br>%{{y}} book(s)<br>%{{customdata}}<extra></extra>",
             )
         )
     fig.update_layout(
