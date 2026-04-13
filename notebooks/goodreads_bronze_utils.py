@@ -29,6 +29,7 @@ def parse_rss_items(rss_bytes: bytes) -> list:
             "book_description": text("book_description"),
             "cover_url":        text("book_medium_image_url"),
             "goodreads_url":    text("link"),
+            "username":         text("user_name"),
         })
 
     return books

@@ -50,7 +50,7 @@ from pyspark.sql.functions import col
 
 spark = SparkSession.builder.getOrCreate()
 
-urls_df = spark.table(SILVER_TABLE).select("book_id", "goodreads_url").filter(col("goodreads_url") != "")
+urls_df = spark.table(SILVER_TABLE).select("book_id", "goodreads_url", "username").filter(col("goodreads_url") != "")
 print(f"Found {urls_df.count()} books to fetch.")
 display(urls_df)
 
@@ -75,6 +75,7 @@ for row in urls_df.collect():
     rows.append({
         "book_id":       row.book_id,
         "goodreads_url": row.goodreads_url,
+        "username":      row.username,
         "raw_html":      html,
     })
     print(f"Fetched book ID: {row.book_id}. Found {len(html):,} characters")
@@ -91,6 +92,7 @@ from pyspark.sql.functions import current_timestamp, lit
 schema = StructType([
     StructField("book_id",       StringType(), True),
     StructField("goodreads_url", StringType(), True),
+    StructField("username",      StringType(), True),
     StructField("raw_html",      StringType(), True),
 ])
 

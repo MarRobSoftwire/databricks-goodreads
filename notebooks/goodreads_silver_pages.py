@@ -41,7 +41,7 @@ latest_ts = bronze_pages.agg(spark_max("_ingested_at")).collect()[0][0]
 pages_latest = (
     bronze_pages
     .filter(col("_ingested_at") == latest_ts)
-    .select("book_id", "raw_html")
+    .select("book_id", "username", "raw_html")
 )
 
 print(f"Latest pages batch: {latest_ts}  —  {pages_latest.count()} pages")
@@ -53,7 +53,7 @@ start_dates = (
     pages_latest
     .withColumn("started_reading_raw", extract_start_date_str(col("raw_html")))
     .withColumn("started_reading", parse_date(col("started_reading_raw")))
-    .select("book_id", "started_reading")
+    .select("book_id", "username", "started_reading")
 )
 
 display(start_dates)
@@ -66,7 +66,7 @@ from pyspark.sql.functions import current_timestamp
 silver = spark.table(SILVER_TABLE)
 
 enriched = (
-    silver.join(start_dates, on="book_id", how="left")
+    silver.join(start_dates, on=["book_id", "username"], how="left")
     .withColumn("_enriched_at", current_timestamp())
 )
 
