@@ -1,0 +1,2 @@
+infrastructure/terraform/.terraform
+infrastructure/terraform/.terraform.lock.hcl

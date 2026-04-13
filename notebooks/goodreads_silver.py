@@ -9,8 +9,8 @@
 # COMMAND ----------
 
 # DBTITLE 1,Configuration
-BRONZE_TABLE = "goodreads.bronze_rss"
-SILVER_TABLE  = "goodreads.silver_books"
+BRONZE_TABLE = "goodreads.goodreads.bronze_rss"
+SILVER_TABLE  = "goodreads.goodreads.silver_books"
 
 # COMMAND ----------
 

@@ -6,7 +6,7 @@ import pandas as pd
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.sql import StatementState
 
-GOLD_TABLE = os.environ.get("TABLE_NAME", "goodreads.gold_pages_per_day")
+GOLD_TABLE = os.environ.get("TABLE_NAME", "goodreads.goodreads.gold_pages_per_day")
 
 
 def load_data(sdk: WorkspaceClient) -> pd.DataFrame:
