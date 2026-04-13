@@ -1,10 +1,17 @@
 bundle:
   name: goodreads_bundle
 
+variables:
+  notebook_runner_sp:
+    description: Application ID of the service principal used to run job notebooks
+    default: 80b13c62-20b3-46bf-8000-e66aba8f9634
+
 resources:
   jobs:
     books_job:
       name: goodreads-books-job
+      run_as:
+        service_principal_name: ${var.notebook_runner_sp}
       tasks:
         - task_key: bronze_books
           notebook_task:
@@ -22,6 +29,8 @@ resources:
 
     pages_job:
       name: goodreads-pages-job
+      run_as:
+        service_principal_name: ${var.notebook_runner_sp}
       tasks:
         - task_key: bronze_review_pages
           notebook_task:
