@@ -15,8 +15,8 @@ def load_data(sdk: WorkspaceClient) -> pd.DataFrame:
     response = sdk.statement_execution.execute_statement(
         warehouse_id=warehouse_id,
         statement=(
-            f"SELECT date, est_pages_read, size(books_in_progress) AS books_in_progress, "
-            f"books_in_progress AS book_titles FROM {GOLD_TABLE} ORDER BY date"
+            f"SELECT username, date, est_pages_read, size(books_in_progress) AS books_in_progress, "
+            f"books_in_progress AS book_titles FROM {GOLD_TABLE} ORDER BY username, date"
         ),
         wait_timeout="0s",
     )
