@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Goodreads — Unity Catalog Setup
+# MAGIC # Goodreads — Hive Metastore Setup
 # MAGIC Run this notebook **once** to create the schema before populating data.
 # MAGIC After this succeeds, run notebooks in order: `goodreads_bronze` → `goodreads_silver`.
 
@@ -12,7 +12,7 @@
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC CREATE SCHEMA IF NOT EXISTS goodreads.goodreads
+# MAGIC CREATE DATABASE IF NOT EXISTS goodreads
 # MAGIC COMMENT 'Goodreads reading data';
 
 # COMMAND ----------
@@ -39,4 +39,4 @@
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC SHOW TABLES IN goodreads.goodreads;
+# MAGIC SHOW TABLES IN goodreads;

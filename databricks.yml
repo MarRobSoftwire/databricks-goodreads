@@ -59,7 +59,7 @@ resources:
         #
         # - name: pages_per_day_table
         #   uc_securable:
-        #     securable_full_name: goodreads.goodreads.gold_pages_per_day
+        #     securable_full_name: workspace.goodreads.gold_pages_per_day
         #     securable_type: TABLE
         #     permission: SELECT
 

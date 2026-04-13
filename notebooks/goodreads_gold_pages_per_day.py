@@ -15,8 +15,8 @@
 # COMMAND ----------
 
 # DBTITLE 1,Configuration
-SILVER_TABLE = "goodreads.goodreads.silver_books_enriched"
-GOLD_TABLE   = "goodreads.goodreads.gold_pages_per_day"
+SILVER_TABLE = "goodreads.silver_books_enriched"
+GOLD_TABLE   = "goodreads.gold_pages_per_day"
 
 # COMMAND ----------
 

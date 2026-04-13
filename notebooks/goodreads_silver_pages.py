@@ -14,9 +14,9 @@
 # COMMAND ----------
 
 # DBTITLE 1,Configuration
-BRONZE_PAGES_TABLE = "goodreads.goodreads.bronze_review_pages"
-SILVER_TABLE       = "goodreads.goodreads.silver_books"
-SILVER_OUT_TABLE   = "goodreads.goodreads.silver_books_enriched"
+BRONZE_PAGES_TABLE = "goodreads.bronze_review_pages"
+SILVER_TABLE       = "goodreads.silver_books"
+SILVER_OUT_TABLE   = "goodreads.silver_books_enriched"
 
 # COMMAND ----------
 

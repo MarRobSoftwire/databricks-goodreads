@@ -13,7 +13,7 @@ RSS_URL = (
     "?shelf=read"
 )
 
-BRONZE_TABLE = "goodreads.goodreads.bronze_rss"
+BRONZE_TABLE = "goodreads.bronze_rss"
 
 # COMMAND ----------
 
