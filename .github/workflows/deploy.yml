@@ -21,6 +21,8 @@ jobs:
       - uses: databricks/setup-cli@main
       - name: Deploy bundle
         run: databricks bundle deploy
+      - name: Start app
+        run: databricks apps start goodreads-app
       - name: Deploy app
         run: |
           databricks apps deploy goodreads-app \
