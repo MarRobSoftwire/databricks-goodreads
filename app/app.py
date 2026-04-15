@@ -47,6 +47,7 @@ app.layout = html.Div(
                         dcc.DatePickerRange(
                             id="date-range",
                             display_format="YYYY-MM-DD",
+                            disabled=True,
                         ),
                     ],
                 ),
@@ -59,6 +60,7 @@ app.layout = html.Div(
                             min=1, max=30, step=1, value=7,
                             marks={1: "1", 7: "7", 14: "14", 30: "30"},
                             tooltip={"placement": "bottom", "always_visible": True},
+                            disabled=True,
                         ),
                     ],
                 ),
@@ -139,6 +141,8 @@ app.layout = html.Div(
     background=True,
     running=[
         (Output("loading-message", "children"), "⏳ Starting warehouse and loading data…", ""),
+        (Output("date-range", "disabled"), True, False),
+        (Output("rolling-window", "disabled"), True, False),
     ],
 )
 def refresh_data(_n):
