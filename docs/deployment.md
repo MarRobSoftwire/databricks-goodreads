@@ -14,9 +14,9 @@ Managed via Databricks Asset Bundles (`databricks.yml`).
 
 ### Patching Resources (workaround)
 
-`bundle deploy` resets app resources to only what is declared in `databricks.yml`. Because the DAB YAML schema does not support `securable_type: TABLE`, this step fetches the current resource list and upserts the UC table entries via the REST API.
+`bundle deploy` resets app resources to only what is declared in `databricks.yml`. Because the DAB YAML schema does not support `securable_type: TABLE`, this step fetches the current resource list and upserts the UC table entries via the REST API. The list of extra resources lives in **`deploy/databricks-app-uc-resources.json`** (resource `name` values must match `valueFrom` in `app/app.yml`).
 
-> `databricks.yml` is the single source of truth for all bundle-manageable resources. The patch step only needs updating when the UC table extras list changes.
+> `databricks.yml` is the single source of truth for all bundle-manageable resources. The patch step only needs updating when that JSON list changes.
 
 ---
 

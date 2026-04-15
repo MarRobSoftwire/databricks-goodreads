@@ -5,6 +5,9 @@ variables:
   notebook_runner_sp:
     description: Application ID of the service principal used to run job notebooks
     default: 80b13c62-20b3-46bf-8000-e66aba8f9634
+  sql_warehouse_id:
+    description: SQL warehouse ID for the Goodreads app (override per target/workspace if needed)
+    default: b5e8bae3847f4c31
 
 resources:
   jobs:
@@ -76,20 +79,15 @@ resources:
       resources:
         - name: sql_warehouse
           sql_warehouse:
-            id: b5e8bae3847f4c31
+            id: ${var.sql_warehouse_id}
             permission: CAN_USE
         - name: pages_job
           description: 'Pages re-ingestion job'
           job:
             id: ${resources.jobs.pages_job.id}
             permission: CAN_MANAGE_RUN
-        # UC Tables are not currently supported in the bundle YAML schema
-        #
-        # - name: pages_per_day_table
-        #   uc_securable:
-        #     securable_full_name: workspace.goodreads.gold_pages_per_day
-        #     securable_type: TABLE
-        #     permission: SELECT
+        # UC TABLE resources: not expressible in bundle YAML — see
+        # deploy/databricks-app-uc-resources.json and deploy.yml "Patch app UC table resource".
 
 targets:
   dev:

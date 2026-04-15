@@ -13,4 +13,4 @@ Injected via `app/app.yml` from bundle resources:
 | `GENRE_TABLE_NAME` | — | `gold_genre` table |
 | `JOB_ID` | `pages_job` resource | Job ID for re-ingestion |
 
-UC table permissions can't be expressed in the bundle schema — they're patched in by CI via `app/uc-extras.json`. See [deployment.md](./deployment.md).
+UC table permissions can't be expressed in the bundle schema — they're patched in by CI using `deploy/databricks-app-uc-resources.json`. See [deployment.md](./deployment.md).

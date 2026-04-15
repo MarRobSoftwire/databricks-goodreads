@@ -1,0 +1,18 @@
+[
+  {
+    "name": "pages_per_day_table",
+    "uc_securable": {
+      "securable_full_name": "workspace.goodreads.gold_pages_per_day",
+      "securable_type": "TABLE",
+      "permission": "SELECT"
+    }
+  },
+  {
+    "name": "gold_genre_table",
+    "uc_securable": {
+      "securable_full_name": "workspace.goodreads.gold_genre",
+      "securable_type": "TABLE",
+      "permission": "SELECT"
+    }
+  }
+]
