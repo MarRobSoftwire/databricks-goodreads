@@ -25,6 +25,37 @@ Goodreads RSS / review pages          Open Library API
 - [Deployment](./docs/deployment.md) — GitHub Actions, manual deployment, CLI reference
 - [Permissions](./docs/permissions.md) — one-time UC grants and service principal setup
 
+## Development
+
+### Running tests
+
+Tests live in `tests/` split by component:
+
+```
+tests/
+  app/        — Dash app unit tests
+  notebooks/  — notebook utility unit tests
+```
+
+Install test dependencies and run the full suite:
+
+```bash
+uv run --extra test pytest
+```
+
+Run a specific subdirectory:
+
+```bash
+uv run --extra test pytest tests/app
+uv run --extra test pytest tests/notebooks
+```
+
+Run with verbose output:
+
+```bash
+uv run --extra test pytest -v
+```
+
 ## Quick start
 
 1. Store the Goodreads session cookie as a Databricks secret — run `notebooks/goodreads_setup.py`

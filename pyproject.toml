@@ -1,0 +1,13 @@
+[project]
+name = "databricks-books"
+version = "0.1.0"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "beautifulsoup4>=4.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

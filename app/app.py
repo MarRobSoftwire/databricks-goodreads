@@ -22,7 +22,7 @@ _sdk = WorkspaceClient()  # auto-configured by the Databricks App runtime
 # ---------------------------------------------------------------------------
 # App layout
 # ---------------------------------------------------------------------------
-cache = diskcache.Cache("./cache")
+cache = diskcache.Cache("/tmp/cache")
 background_callback_manager = dash.DiskcacheManager(cache)
 
 app = dash.Dash(__name__, background_callback_manager=background_callback_manager)
@@ -73,6 +73,10 @@ app.layout = html.Div(
                     id="reingest-button",
                     n_clicks=0,
                     style={"padding": "6px 16px", "cursor": "pointer"},
+                ),
+                dcc.ConfirmDialog(
+                    id="reingest-confirm",
+                    message="This will trigger a full re-ingest job on Databricks. Continue?",
                 ),
                 html.Div(id="job-status", style={"marginTop": "8px", "fontSize": "13px", "color": "#555"}),
             ],
@@ -165,19 +169,28 @@ def update_charts(json_data, start_date, end_date, window):
     df["date"] = pd.to_datetime(df["date"])
 
     if start_date:
-        df = df[df["date"] >= start_date]
+        df = df[df["date"] >= pd.to_datetime(start_date)]
     if end_date:
-        df = df[df["date"] <= end_date]
+        df = df[df["date"] <= pd.to_datetime(end_date)]
 
     df = df.sort_values("date")
     return make_pages_chart(df, window), make_books_chart(df)
 
 
 @app.callback(
+    Output("reingest-confirm", "displayed"),
+    Input("reingest-button", "n_clicks"),
+    prevent_initial_call=True,
+)
+def show_reingest_confirm(_n_clicks):
+    return True
+
+
+@app.callback(
     Output("run-id-store", "data"),
     Output("job-poll-interval", "disabled", allow_duplicate=True),
     Output("reingest-button", "disabled"),
-    Input("reingest-button", "n_clicks"),
+    Input("reingest-confirm", "submit_n_clicks"),
     prevent_initial_call=True,
     background=True,
     running=[
@@ -185,9 +198,7 @@ def update_charts(json_data, start_date, end_date, window):
         (Output("reingest-button", "disabled"), True, False),
     ],
 )
-def trigger_reingest(n_clicks):
-    if not n_clicks:
-        return dash.no_update, dash.no_update, dash.no_update
+def trigger_reingest(_submit_n_clicks):
     waiter = _sdk.jobs.run_now(job_id=int(os.environ["JOB_ID"]))
     return waiter.run_id, False, False
 
