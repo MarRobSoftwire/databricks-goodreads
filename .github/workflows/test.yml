@@ -14,10 +14,6 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-      - name: Install dependencies
-        run: pip install pytest beautifulsoup4 python-dateutil
+      - uses: astral-sh/setup-uv@v5
       - name: Run tests
-        run: pytest notebooks/ app/ -v
+        run: uv run --extra test pytest -v
