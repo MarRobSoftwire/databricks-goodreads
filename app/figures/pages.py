@@ -1,13 +1,13 @@
 import pandas as pd
 import plotly.graph_objects as go
 
-_COLORS = ["#1a56a4", "#1e6e48", "#a0481a", "#6b2183", "#a02020"]
+from .colors import COLORS
 
 
 def make_pages_chart(df: pd.DataFrame, window: int) -> go.Figure:
     fig = go.Figure()
     for i, (username, udf) in enumerate(df.groupby("username")):
-        line_color = _COLORS[i % len(_COLORS)]
+        color = COLORS[i % len(COLORS)]
         udf = udf.sort_values("date")
         roll_col = udf["est_pages_read"].rolling(window, min_periods=1).mean()
         book_labels = udf["book_titles"].apply(lambda titles: "<br>".join(f"• {t}" for t in titles))
@@ -16,7 +16,7 @@ def make_pages_chart(df: pd.DataFrame, window: int) -> go.Figure:
             go.Scatter(
                 x=udf["date"], y=roll_col,
                 name=username,
-                line=dict(color=line_color, width=2),
+                line=dict(color=color, width=2),
                 mode="lines",
                 customdata=customdata,
                 hovertemplate=(

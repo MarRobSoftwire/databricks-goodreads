@@ -13,7 +13,7 @@ from dash import dcc, html
 from dash.dependencies import Input, Output
 from databricks.sdk import WorkspaceClient
 
-from data import GOLD_GENRE_TABLE, GOLD_TABLE, load_data, load_genre_data
+from data import GOLD_GENRE_TABLE, GOLD_TABLE, load_pages_data, load_genre_data
 from figures import make_books_chart, make_genre_chart, make_pages_chart
 from job_status import format_run_status
 
@@ -108,6 +108,7 @@ app.layout = html.Div(
                 ),
             ],
         ),
+        html.Div(id="genre-loading-message", style={"fontSize": "13px", "marginBottom": "8px", "color": "#888"}),
         html.Div(id="genre-error-message", style={"fontSize": "13px", "color": "#c0392b", "marginBottom": "8px"}),
         dcc.Graph(id="genre-chart", style={"height": "500px"}),
 
@@ -138,7 +139,7 @@ app.layout = html.Div(
 )
 def refresh_data(_n):
     try:
-        df = load_data(_sdk)
+        df = load_pages_data(_sdk)
         min_date = df["date"].min().date().isoformat()
         max_date = df["date"].max().date().isoformat()
         return df.to_json(date_format="iso", orient="split"), min_date, max_date, min_date, max_date, ""
@@ -216,6 +217,9 @@ def poll_job_status(_n, run_id):
     Output("genre-error-message", "children"),
     Input("refresh-interval", "n_intervals"),
     background=True,
+    running=[
+        (Output("genre-loading-message", "children"), "⏳ Loading genre data…", ""),
+    ],
 )
 def refresh_genre_data(_n):
     try:
