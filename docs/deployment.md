@@ -1,26 +1,16 @@
 # Deployment
 
-The project is deployed via [Databricks Asset Bundles (DAB)](https://docs.databricks.com/aws/en/dev-tools/bundles/). The bundle definition is in `databricks.yml`.
+Managed via Databricks Asset Bundles (`databricks.yml`).
 
-## GitHub Actions (normal workflow)
-
-Three workflows are defined in `.github/workflows/`:
+## GitHub Actions
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| `test.yml` | push / PR | Runs pytest on `notebooks/` and `app/` (Python 3.14) |
-| `deploy.yml` | push to `main` | Deploys bundle + app to dev, patches UC table resources |
-| `setup.yml` | manual (`workflow_dispatch`) | One-time bind of bundle to existing app |
+| `test.yml` | push / PR | pytest on `notebooks/` and `app/` |
+| `deploy.yml` | push to `main` | bundle deploy + app deploy + UC table patch |
+| `setup.yml` | manual | one-time bundle bind to existing app |
 
-### Required GitHub secrets / variables
-
-| Name | Type | Description |
-|------|------|-------------|
-| `DATABRICKS_HOST` | variable | Workspace URL |
-| `DATABRICKS_CLIENT_ID` | secret | Service principal OAuth client ID |
-| `DATABRICKS_CLIENT_SECRET` | secret | Service principal OAuth client secret |
-
-The deploy workflow authenticates as a service principal. That principal needs sufficient permissions — see [permissions.md](./permissions.md).
+**Required secrets/variables:** `DATABRICKS_HOST` (variable), `DATABRICKS_CLIENT_ID`, `DATABRICKS_CLIENT_SECRET` (secrets).
 
 ### Patching Resources (workaround)
 
