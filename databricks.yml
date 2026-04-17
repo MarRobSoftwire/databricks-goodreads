@@ -29,6 +29,11 @@ resources:
             - task_key: silver_books
           run_job_task:
             job_id: ${resources.jobs.pages_job.id}
+        - task_key: run_open_library_job
+          depends_on:
+            - task_key: silver_books
+          run_job_task:
+            job_id: ${resources.jobs.open_library_job.id}
 
     open_library_job:
       name: goodreads-open-library-job
