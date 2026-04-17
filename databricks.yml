@@ -64,6 +64,8 @@ resources:
       permissions:
         - service_principal_name: ${var.notebook_runner_sp}
           level: CAN_MANAGE_RUN
+        - service_principal_name: ${resources.apps.goodreads_app.service_principal_client_id}
+          level: CAN_MANAGE_RUN
       tasks:
         - task_key: bronze_review_pages
           notebook_task:
