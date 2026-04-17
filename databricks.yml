@@ -39,6 +39,9 @@ resources:
       name: goodreads-open-library-job
       run_as:
         service_principal_name: ${var.notebook_runner_sp}
+      permissions:
+        - service_principal_name: ${var.notebook_runner_sp}
+          level: CAN_MANAGE_RUN
       tasks:
         - task_key: bronze_open_library
           notebook_task:
@@ -58,6 +61,9 @@ resources:
       name: goodreads-pages-job
       run_as:
         service_principal_name: ${var.notebook_runner_sp}
+      permissions:
+        - service_principal_name: ${var.notebook_runner_sp}
+          level: CAN_MANAGE_RUN
       tasks:
         - task_key: bronze_review_pages
           notebook_task:
